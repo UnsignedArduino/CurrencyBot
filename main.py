@@ -1,9 +1,11 @@
 import logging
 from os import getenv
+from pathlib import Path
+
+from dotenv import load_dotenv
+from interactions import Client, CommandContext
 
 from logger import create_logger
-from dotenv import load_dotenv
-from pathlib import Path
 
 logger = create_logger(name=__name__, level=logging.DEBUG)
 
@@ -18,3 +20,13 @@ if not token:
     exit(1)
 else:
     logger.debug(f"Found token of length {len(token)}")
+
+bot = Client(token=token)
+
+
+@bot.command(name="test", description="testing")
+async def test(ctx: CommandContext):
+    await ctx.send("test")
+
+
+bot.start()
