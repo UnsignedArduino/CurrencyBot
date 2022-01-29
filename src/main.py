@@ -5,7 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from interactions import Client, CommandContext
 
-from logger import create_logger
+from util.logger import create_logger
 
 logger = create_logger(name=__name__, level=logging.DEBUG)
 
