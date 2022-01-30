@@ -3,7 +3,8 @@ from pathlib import Path
 
 import arrow
 from dotenv import load_dotenv
-from interactions import Client, CommandContext, Embed, Option, OptionType
+from interactions import Client, CommandContext, Embed, Option, OptionType, \
+    Button, ButtonStyle
 
 from util.db import DBClient
 from util.environ import load_env_var
@@ -34,8 +35,22 @@ CLAIM_VALUES = {
     "monthly": int(load_env_var("MONTHLY_CLAIM")),
 }
 
+GITHUB_URL = "https://github.com/UnsignedArduino/CurrencyBot"
+
 bot = Client(token=token)
 db = DBClient(uri=db_uri, db_name=db_name)
+
+
+@bot.command(name="github",
+             description="Shows the link to my GitHub repository!",
+             scope=scope)
+async def github(ctx: CommandContext):
+    button = Button(style=ButtonStyle.LINK,
+                    label="Click to open!",
+                    url=GITHUB_URL)
+    embed = Embed(title="GitHub repository link",
+                  description=GITHUB_URL)
+    await ctx.send(embeds=embed, components=[button])
 
 
 @bot.command(name="balance",
