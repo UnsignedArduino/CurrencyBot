@@ -4,7 +4,7 @@ from pathlib import Path
 import arrow
 from dotenv import load_dotenv
 from interactions import Client, CommandContext, Embed, Option, OptionType, \
-    Button, ButtonStyle
+    Button, ButtonStyle, MISSING
 
 from util.db import DBClient
 from util.environ import load_env_var
@@ -21,7 +21,12 @@ db_uri = load_env_var("DB_URI")
 db_name = load_env_var("DB_NAME")
 currency_name = load_env_var("CURRENCY_NAME")
 currency_name_plural = load_env_var("CURRENCY_NAME_PLURAL")
-scope = int(load_env_var("BOT_SCOPE"))
+raw_scope = load_env_var("BOT_SCOPE")
+scope = int(raw_scope) if raw_scope else MISSING
+if scope is not MISSING:
+    logger.warning(f"Scope has been restricted to a single server!")
+else:
+    logger.debug("Scope is global")
 
 CLAIM_TIMES = {
     "hourly": 3600,
