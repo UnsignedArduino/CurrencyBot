@@ -35,16 +35,16 @@ db = DBClient(uri=db_uri, db_name=db_name)
                     description="The member to check! (Defaults to yourself)"
                 )
              ])
-async def balance(ctx: CommandContext, member: Member = None):
+async def balance(ctx: CommandContext, member: str = None):
     if member is None:
-        id = ctx.author.user.id
+        member_id = int(str(ctx.author.user.id))
     else:
-        id = member
-    user_bal = 0
+        member_id = int(member)
+    user_bal = await db.get_balance(member_id)
     if user_bal == 1:
-        text = f"<@{id}> has {user_bal} {currency_name}"
+        text = f"<@{member_id}> has {user_bal} {currency_name}"
     else:
-        text = f"<@{id}> has {user_bal} {currency_name_plural}"
+        text = f"<@{member_id}> has {user_bal} {currency_name_plural}"
     embed = Embed(description=text)
     await ctx.send(embeds=embed)
 

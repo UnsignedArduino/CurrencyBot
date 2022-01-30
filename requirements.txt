@@ -1,3 +1,4 @@
 python-dotenv
 discord-py-interactions
 motor
+arrow
