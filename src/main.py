@@ -146,34 +146,41 @@ async def balance(ctx: CommandContext, member: str = None):
              scope=SCOPE,
              options=[
                  Option(
-                     type=OptionType.STRING,
-                     name="duration",
-                     description="What duration you want to claim for!",
-                     required=True,
-                     choices=[
-                         {"name": "hourly", "value": "hourly"},
-                         {"name": "daily", "value": "daily"},
-                         {"name": "monthly", "value": "monthly"}
-                     ]
+                     type=OptionType.SUB_COMMAND,
+                     name="hourly",
+                     description="Claim your hourly! "
+                                 "(Which you can do...every hour)"
+                 ),
+                 Option(
+                     type=OptionType.SUB_COMMAND,
+                     name="daily",
+                     description="Claim your daily! "
+                                 "(Which you can do...every day)"
+                 ),
+                 Option(
+                     type=OptionType.SUB_COMMAND,
+                     name="monthly",
+                     description="Claim your monthly! "
+                                 "(Which you can do every 30 day period)"
                  )
              ])
-async def claim(ctx: CommandContext, duration: str):
+async def claim(ctx: CommandContext, sub_command: str):
     member_id = int(str(ctx.author.user.id))
     last_claim = await db.get_last_claim(member_id=member_id,
-                                         claim_type=duration)
+                                         claim_type=sub_command)
     last_claim = last_claim.int_timestamp
-    time_diff = CLAIM_TIMES[duration]
+    time_diff = CLAIM_TIMES[sub_command]
     now = arrow.now().int_timestamp
     if now - last_claim > time_diff:
-        earned = CLAIM_VALUES[duration]
+        earned = CLAIM_VALUES[sub_command]
         await db.change_balance(member_id=member_id, change=earned)
-        await db.set_last_claim(member_id=member_id, claim_type=duration,
+        await db.set_last_claim(member_id=member_id, claim_type=sub_command,
                                 last_claim_time=now)
-        embed = Embed(description=f'You claimed your {duration} and got '
+        embed = Embed(description=f'You claimed your {sub_command} and got '
                                   f'{earned} {currency_naming(earned)}!')
     else:
-        time_left = arrow.get(last_claim + CLAIM_TIMES[duration])
-        embed = Embed(description=f"You can claim your {duration} in "
+        time_left = arrow.get(last_claim + CLAIM_TIMES[sub_command])
+        embed = Embed(description=f"You can claim your {sub_command} in "
                                   f"{time_left.humanize(only_distance=True)}!",
                       color=0xFF0000)
     await ctx.send(embeds=embed)
