@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from random import randint
+from random import randint, choice
 
 import arrow
 from dotenv import load_dotenv
@@ -46,6 +46,15 @@ BET_COIN_FLIP_CHANCE = int(load_env_var("BET_COIN_FLIP_CHANCE"))
 BET_COIN_FLIP_REWARD = float(load_env_var("BET_COIN_FLIP_REWARD"))
 BET_DICE_ROLL_CHANCE = int(load_env_var("BET_DICE_ROLL_CHANCE"))
 BET_DICE_ROLL_REWARD = float(load_env_var("BET_DICE_ROLL_REWARD"))
+BET_WHEEL_REWARDS = [f"{float(num):.2f}" for num in
+                     load_env_var("BET_WHEEL_REWARDS").split(" ")]
+BET_WHEEL_ARROWS = ["↖", "⬆", "↗", "➡", "↘", "⬇", "↙", "⬅"]
+BET_WHEEL = dict(zip(BET_WHEEL_ARROWS, BET_WHEEL_REWARDS))
+BET_WHEEL_STRING = """
+x{↖} x{⬆} x{↗}
+x{⬅}   {ARROW}   x{➡}
+x{↙} x{⬇} x{↘}
+"""
 
 GITHUB_URL = "https://github.com/UnsignedArduino/CurrencyBot"
 
@@ -280,6 +289,43 @@ async def bet_coin_flip(ctx: CommandContext, amount: int, side: int):
                 rand_side = randint(1, 6)
             embed = Embed(description=f"It landed on {rand_side}! "
                                       f":pensive:")
+    await ctx.send(embeds=embed)
+
+
+@bot.command(name="bet_wheel",
+             description="Bet on a wheel!",
+             scope=SCOPE,
+             options=[
+                 Option(
+                     type=OptionType.INTEGER,
+                     name="amount",
+                     description="How much to bet!",
+                     min_value=1,
+                     required=True
+                 )
+             ])
+async def bet_wheel(ctx: CommandContext, amount: int):
+    member_id = int(str(ctx.author.user.id))
+    from_bal = await db.get_balance(member_id=member_id)
+    if amount > from_bal:
+        embed = Embed(description=f"You do not have enough "
+                                  f"{CURRENCY_NAME_PLURAL} to bet!\n"
+                                  f"(You have {from_bal} "
+                                  f"{currency_naming(from_bal)} which is "
+                                  f"{amount - from_bal} less then {amount})",
+                      color=0xFF0000)
+    else:
+        await db.change_balance(member_id=member_id, change=-amount)
+        direction = choice(BET_WHEEL_ARROWS)
+        multiplier = float(BET_WHEEL[direction])
+        new_amount = round(amount * multiplier)
+        await db.change_balance(member_id=member_id, change=new_amount)
+        wheel_string = BET_WHEEL_STRING.format(**BET_WHEEL, ARROW=direction)
+        embed = Embed(description=f"You win {new_amount} "
+                                  f"{currency_naming(new_amount)}!\n\n"
+                                  f"```text\n"
+                                  f"{wheel_string}\n"
+                                  f"```")
     await ctx.send(embeds=embed)
 
 
