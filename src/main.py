@@ -244,4 +244,50 @@ async def bet_coin_flip(ctx: CommandContext, amount: int, side: str):
     await ctx.send(embeds=embed)
 
 
+@bot.command(name="bet_dice_roll",
+             description="Bet on a dice roll!",
+             scope=SCOPE,
+             options=[
+                 Option(
+                     type=OptionType.INTEGER,
+                     name="amount",
+                     description="How much to bet!",
+                     min_value=1,
+                     required=True
+                 ),
+                 Option(
+                     type=OptionType.INTEGER,
+                     name="side",
+                     description="Side to bet on!",
+                     required=True,
+                     min_value=1,
+                     max_value=6
+                 )
+             ])
+async def bet_coin_flip(ctx: CommandContext, amount: int, side: int):
+    member_id = int(str(ctx.author.user.id))
+    from_bal = await db.get_balance(member_id=member_id)
+    if amount > from_bal:
+        embed = Embed(description=f"You do not have enough "
+                                  f"{CURRENCY_NAME_PLURAL} to bet!\n"
+                                  f"(You have {from_bal} "
+                                  f"{currency_naming(from_bal)} which is "
+                                  f"{amount - from_bal} less then {amount})",
+                      color=0xFF0000)
+    else:
+        await db.change_balance(member_id=member_id, change=-amount)
+        if random_chance(BET_DICE_ROLL_CHANCE):
+            got = round(amount * BET_DICE_ROLL_REWARD)
+            await db.change_balance(member_id=member_id, change=got)
+            embed = Embed(description=f"It landed on {side}! You get {got} "
+                                      f"{currency_naming(got)}!")
+        else:
+            rand_side = randint(1, 6)
+            while rand_side == side:
+                rand_side = randint(1, 6)
+            embed = Embed(description=f"It landed on {rand_side}! "
+                                      f":pensive:")
+    await ctx.send(embeds=embed)
+
+
 bot.start()
