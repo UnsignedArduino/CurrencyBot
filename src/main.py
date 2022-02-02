@@ -70,11 +70,34 @@ def currency_naming(value: int) -> str:
 
 
 def random_chance(chance: int) -> bool:
+    """
+    Return a random boolean depending on the chance.
+
+    :param chance: An integer from 0 to 100.
+    :return: A boolean.
+    """
     if chance < 0:
         raise ValueError(f"Chance cannot be less then 0! (Got: {chance})")
     if chance > 100:
         raise ValueError(f"Chance cannot be greater then 100! (Got: {chance})")
     return randint(1, 100) <= chance
+
+
+def not_enough_reason(action: str, have: int, need: int) -> str:
+    """
+    Return a formatted string that gives your the reason why you don't have
+    enough money!
+
+    :param action: The action, such as "bet" or "send".
+    :param have: How much the user has.
+    :param need: How much the user needs to perform the action.
+    :return: A formatted string.
+    """
+    return f"You do not have enough " \
+           f"{CURRENCY_NAME_PLURAL} to {action}!\n" \
+           f"(You have {have} " \
+           f"{currency_naming(have)} which is " \
+           f"{need - have} less then {need})"
 
 
 bot = Client(token=TOKEN)
@@ -186,11 +209,7 @@ async def send(ctx: CommandContext, member: str, amount: int):
                                   f"send me money. :cry:",
                       color=0xFF0000)
     elif amount > from_bal:
-        embed = Embed(description=f"You do not have enough "
-                                  f"{CURRENCY_NAME_PLURAL} to send!\n"
-                                  f"(You have {from_bal} "
-                                  f"{currency_naming(from_bal)} which is "
-                                  f"{amount - from_bal} less then {amount})",
+        embed = Embed(description=not_enough_reason("send", from_bal, amount),
                       color=0xFF0000)
     else:
         await db.change_balance(member_id=from_id, change=-amount)
@@ -226,11 +245,7 @@ async def bet_coin_flip(ctx: CommandContext, amount: int, side: str):
     member_id = int(str(ctx.author.user.id))
     from_bal = await db.get_balance(member_id=member_id)
     if amount > from_bal:
-        embed = Embed(description=f"You do not have enough "
-                                  f"{CURRENCY_NAME_PLURAL} to bet!\n"
-                                  f"(You have {from_bal} "
-                                  f"{currency_naming(from_bal)} which is "
-                                  f"{amount - from_bal} less then {amount})",
+        embed = Embed(description=not_enough_reason("bet", from_bal, amount),
                       color=0xFF0000)
     else:
         await db.change_balance(member_id=member_id, change=-amount)
@@ -270,11 +285,7 @@ async def bet_coin_flip(ctx: CommandContext, amount: int, side: int):
     member_id = int(str(ctx.author.user.id))
     from_bal = await db.get_balance(member_id=member_id)
     if amount > from_bal:
-        embed = Embed(description=f"You do not have enough "
-                                  f"{CURRENCY_NAME_PLURAL} to bet!\n"
-                                  f"(You have {from_bal} "
-                                  f"{currency_naming(from_bal)} which is "
-                                  f"{amount - from_bal} less then {amount})",
+        embed = Embed(description=not_enough_reason("bet", from_bal, amount),
                       color=0xFF0000)
     else:
         await db.change_balance(member_id=member_id, change=-amount)
@@ -308,11 +319,7 @@ async def bet_wheel(ctx: CommandContext, amount: int):
     member_id = int(str(ctx.author.user.id))
     from_bal = await db.get_balance(member_id=member_id)
     if amount > from_bal:
-        embed = Embed(description=f"You do not have enough "
-                                  f"{CURRENCY_NAME_PLURAL} to bet!\n"
-                                  f"(You have {from_bal} "
-                                  f"{currency_naming(from_bal)} which is "
-                                  f"{amount - from_bal} less then {amount})",
+        embed = Embed(description=not_enough_reason("bet", from_bal, amount),
                       color=0xFF0000)
     else:
         await db.change_balance(member_id=member_id, change=-amount)
