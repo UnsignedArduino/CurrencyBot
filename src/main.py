@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 from random import randint, choice
+from typing import Union
 
 import arrow
 from dotenv import load_dotenv
@@ -226,29 +227,73 @@ async def send(ctx: CommandContext, member: str, amount: int):
     await ctx.send(embeds=embed)
 
 
-@bot.command(name="bet_coin_flip",
-             description="Bet on a coin flip!",
+@bot.command(name="bet",
+             description="Gambling!!!",
              scope=SCOPE,
              options=[
                  Option(
-                     type=OptionType.INTEGER,
-                     name="amount",
-                     description="How much to bet!",
-                     min_value=1,
-                     required=True
+                     name="coin_flip",
+                     description="Bet on a coin flip!",
+                     type=OptionType.SUB_COMMAND,
+                     options=[
+                         Option(
+                             type=OptionType.INTEGER,
+                             name="amount",
+                             description="How much to bet!",
+                             min_value=1,
+                             required=True
+                         ),
+                         Option(
+                             type=OptionType.STRING,
+                             name="side",
+                             description="Side to bet on!",
+                             required=True,
+                             choices=[
+                                 {"name": "heads", "value": "heads"},
+                                 {"name": "tails", "value": "tails"}
+                             ]
+                         )
+                     ]
                  ),
                  Option(
-                     type=OptionType.STRING,
-                     name="side",
-                     description="Side to bet on!",
-                     required=True,
-                     choices=[
-                         {"name": "heads", "value": "heads"},
-                         {"name": "tails", "value": "tails"}
+                     name="dice_roll",
+                     description="Bet on a dice roll!",
+                     type=OptionType.SUB_COMMAND,
+                     options=[
+                         Option(
+                             type=OptionType.INTEGER,
+                             name="amount",
+                             description="How much to bet!",
+                             min_value=1,
+                             required=True
+                         ),
+                         Option(
+                             type=OptionType.INTEGER,
+                             name="side",
+                             description="Side to bet on!",
+                             required=True,
+                             min_value=1,
+                             max_value=6
+                         )
+                     ]
+                 ),
+                 Option(
+                     name="wheel",
+                     description="Spin a wheel to gain or lose money!",
+                     type=OptionType.SUB_COMMAND,
+                     options=[
+                         Option(
+                             type=OptionType.INTEGER,
+                             name="amount",
+                             description="How much to bet!",
+                             min_value=1,
+                             required=True
+                         )
                      ]
                  )
              ])
-async def bet_coin_flip(ctx: CommandContext, amount: int, side: str):
+async def bet(ctx: CommandContext, sub_command: str, amount: int,
+              side: Union[str, int] = None):
     member_id = int(str(ctx.author.user.id))
     from_bal = await db.get_balance(member_id=member_id)
     if amount > from_bal:
@@ -256,90 +301,44 @@ async def bet_coin_flip(ctx: CommandContext, amount: int, side: str):
                       color=0xFF0000)
     else:
         await db.change_balance(member_id=member_id, change=-amount)
-        if random_chance(BET_COIN_FLIP_CHANCE):
-            got = round(amount * BET_COIN_FLIP_REWARD)
-            await db.change_balance(member_id=member_id, change=got)
-            embed = Embed(description=f"It was {side}! You get {got} "
-                                      f"{currency_naming(got)}!")
-        else:
-            opposite_side = {"heads": "tails", "tails": "heads"}
-            embed = Embed(description=f"It was {opposite_side[side]}! "
-                                      f":pensive:")
-    await ctx.send(embeds=embed)
-
-
-@bot.command(name="bet_dice_roll",
-             description="Bet on a dice roll!",
-             scope=SCOPE,
-             options=[
-                 Option(
-                     type=OptionType.INTEGER,
-                     name="amount",
-                     description="How much to bet!",
-                     min_value=1,
-                     required=True
-                 ),
-                 Option(
-                     type=OptionType.INTEGER,
-                     name="side",
-                     description="Side to bet on!",
-                     required=True,
-                     min_value=1,
-                     max_value=6
-                 )
-             ])
-async def bet_coin_flip(ctx: CommandContext, amount: int, side: int):
-    member_id = int(str(ctx.author.user.id))
-    from_bal = await db.get_balance(member_id=member_id)
-    if amount > from_bal:
-        embed = Embed(description=not_enough_reason("bet", from_bal, amount),
-                      color=0xFF0000)
-    else:
-        await db.change_balance(member_id=member_id, change=-amount)
-        if random_chance(BET_DICE_ROLL_CHANCE):
-            got = round(amount * BET_DICE_ROLL_REWARD)
-            await db.change_balance(member_id=member_id, change=got)
-            embed = Embed(description=f"It landed on {side}! You get {got} "
-                                      f"{currency_naming(got)}!")
-        else:
-            rand_side = randint(1, 6)
-            while rand_side == side:
+        if sub_command == "coin_flip":
+            if random_chance(BET_COIN_FLIP_CHANCE):
+                got = round(amount * BET_COIN_FLIP_REWARD)
+                await db.change_balance(member_id=member_id, change=got)
+                embed = Embed(description=f"It was {side}! You get {got} "
+                                          f"{currency_naming(got)}!")
+            else:
+                opposite_side = {"heads": "tails", "tails": "heads"}
+                embed = Embed(description=f"It was {opposite_side[side]}! "
+                                          f":pensive:")
+        elif sub_command == "dice_roll":
+            if random_chance(BET_DICE_ROLL_CHANCE):
+                got = round(amount * BET_DICE_ROLL_REWARD)
+                await db.change_balance(member_id=member_id, change=got)
+                embed = Embed(
+                    description=f"It landed on {side}! You get {got} "
+                                f"{currency_naming(got)}!")
+            else:
                 rand_side = randint(1, 6)
-            embed = Embed(description=f"It landed on {rand_side}! "
-                                      f":pensive:")
-    await ctx.send(embeds=embed)
-
-
-@bot.command(name="bet_wheel",
-             description="Bet on a wheel!",
-             scope=SCOPE,
-             options=[
-                 Option(
-                     type=OptionType.INTEGER,
-                     name="amount",
-                     description="How much to bet!",
-                     min_value=1,
-                     required=True
-                 )
-             ])
-async def bet_wheel(ctx: CommandContext, amount: int):
-    member_id = int(str(ctx.author.user.id))
-    from_bal = await db.get_balance(member_id=member_id)
-    if amount > from_bal:
-        embed = Embed(description=not_enough_reason("bet", from_bal, amount),
-                      color=0xFF0000)
-    else:
-        await db.change_balance(member_id=member_id, change=-amount)
-        direction = choice(BET_WHEEL_ARROWS)
-        multiplier = float(BET_WHEEL[direction])
-        new_amount = round(amount * multiplier)
-        await db.change_balance(member_id=member_id, change=new_amount)
-        wheel_string = BET_WHEEL_STRING.format(**BET_WHEEL, ARROW=direction)
-        embed = Embed(description=f"You win {new_amount} "
-                                  f"{currency_naming(new_amount)}!\n\n"
-                                  f"```text\n"
-                                  f"{wheel_string}\n"
-                                  f"```")
+                while rand_side == side:
+                    rand_side = randint(1, 6)
+                embed = Embed(description=f"It landed on {rand_side}! "
+                                          f":pensive:")
+        elif sub_command == "wheel":
+            direction = choice(BET_WHEEL_ARROWS)
+            multiplier = float(BET_WHEEL[direction])
+            new_amount = round(amount * multiplier)
+            await db.change_balance(member_id=member_id, change=new_amount)
+            wheel_string = BET_WHEEL_STRING.format(**BET_WHEEL,
+                                                   ARROW=direction)
+            embed = Embed(description=f"You win {new_amount} "
+                                      f"{currency_naming(new_amount)}!\n\n"
+                                      f"```text\n"
+                                      f"{wheel_string}\n"
+                                      f"```")
+        else:
+            embed = Embed(description="?",
+                          color=0xFF0000)
     await ctx.send(embeds=embed)
 
 
